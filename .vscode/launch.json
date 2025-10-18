@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/valery/programming/cpp/2course",
-      "program": "c:/Users/valery/programming/cpp/2course/build/Debug/outDebug",
+      "cwd": "c:/Users/valery/programming/cpp/2course/dz_lab/subvector",
+      "program": "c:/Users/valery/programming/cpp/2course/dz_lab/subvector/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
