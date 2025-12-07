@@ -1,0 +1,28 @@
+// C++ program to sort a list
+
+#include <iostream>
+#include <list>
+using namespace std;
+
+int main()
+{
+    // Initializing a list of integers
+    list<int> myList = { 30, 10, 20, 40, 50 };
+
+    // Printing the list before sorting
+    cout << "List before sorting : ";
+    for (int num : myList) {
+        cout << num << " ";
+    }
+    cout << endl;
+
+    // Sorting the list
+    myList.sort();
+
+    // Printing the list after sorting
+    cout << "List after sorting : ";
+    for (int num : myList) {
+        cout << num << " ";
+    }
+    return 0;
+}
