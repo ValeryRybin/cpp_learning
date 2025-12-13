@@ -27,7 +27,7 @@ private:
             return true;
         else
         {
-            int *data = new (std::nothrow) int[new_capacity];
+            T *data = new (std::nothrow) T[new_capacity];
             if (!data)
                 return false;
             for (unsigned int i = 0; i < std::min(this->size_, new_capacity); ++i)
@@ -48,7 +48,47 @@ private:
 public:
     Subqueue() : data(nullptr), size_(0), capacity(0), head(0), tail(0) {}
     ~Subqueue() { delete[] data; }
-    bool push(int element)
+    // Конструктор копирования
+    Subqueue(const Subqueue &other)
+        : data(nullptr), head(0), tail(0), size_(0), capacity(0)
+    {
+        if (other.size_ > 0)
+        {
+            resize(other.capacity);
+            for (unsigned int i = 0; i < other.size_; ++i)
+            {
+                unsigned int idx = (other.head + i) % other.capacity;
+                this->push(other.data[idx]);
+            }
+        }
+    }
+
+    // Оператор присваивания
+    Subqueue &operator=(const Subqueue &other)
+    {
+        if (this != &other)
+        {
+            delete[] this->data;
+            this->data = nullptr;
+            this->head = 0;
+            this->tail = 0;
+            this->size_ = 0;
+            this->capacity = 0;
+
+            if (other.size_ > 0)
+            {
+                resize(other.capacity);
+                for (unsigned int i = 0; i < other.size_; ++i)
+                {
+                    unsigned int idx = (other.head + i) % other.capacity;
+                    this->push(other.data[idx]);
+                }
+            }
+        }
+        return *this;
+    }
+
+    bool push(T element)
     {
         if (this->size_ >= this->capacity)
             if (!this->resize(this->capacity * 2 + 1))
@@ -58,17 +98,17 @@ public:
         ++this->size_;
         return true;
     }
-    int pop()
+    T pop()
     {
         if (this->size_ == 0)
             throw std::out_of_range("Error: subqueue is empty.");
 
-        int result = this->data[this->head];
+        T result = this->data[this->head];
         this->head = (this->head + 1) % this->capacity;
         --this->size_;
         return result;
     }
-    int front()
+    T front()
     {
         if (this->size_ == 0)
             throw std::out_of_range("Error: subvector is empty.");

@@ -313,6 +313,194 @@ class Subset
         return node->parent_->parent_;
     }
 
+    struct SplitResult
+    {
+        Node<T> *left;
+        Node<T> *right;
+    };
+    int GetBlackHeight(Node<T> *node) const
+    {
+        if (!node)
+            return 0;
+        int height = 0;
+        Node<T> *current = node;
+        while (current)
+        {
+            if (!current->is_red_)
+                ++height;
+            current = current->left_;
+        }
+        return height;
+    }
+    SplitResult Split(Node<T> *node, const T &key)
+    {
+        if (!node)
+            return {nullptr, nullptr};
+        if (node->key_ < key)
+        {
+            auto result = Split(node->right_, key);
+            node->right_ = result.left;
+            if (result.left)
+                result.left->parent_ = node;
+            result.left = node;
+            node->parent_ = nullptr;
+            return result;
+        }
+        else
+        {
+            auto result = Split(node->left_, key);
+            node->left_ = result.right;
+            if (result.right)
+                result.right->parent_ = node;
+            result.right = node;
+            node->parent_ = nullptr;
+            return result;
+        }
+    }
+    Node<T> *InsertNodeIntoTree(Node<T> *tree, Node<T> *node)
+    {
+        if (!tree)
+        {
+            node->parent_ = nullptr;
+            node->left_ = nullptr;
+            node->right_ = nullptr;
+            node->is_red_ = false;
+            return node;
+        }
+        Node<T> *current = tree;
+        Node<T> *parent = nullptr;
+        while (current)
+        {
+            parent = current;
+            if (node->key_ < current->key_)
+                current = current->left_;
+            else
+                current = current->right_;
+        }
+        node->parent_ = parent;
+        node->left_ = nullptr;
+        node->right_ = nullptr;
+        node->is_red_ = true;
+        if (node->key_ < parent->key_)
+            parent->left_ = node;
+        else
+            parent->right_ = node;
+        FixInsert(node);
+        while (node->parent_)
+            node = node->parent_;
+        return node;
+    }
+    Node<T> *Join(Node<T> *left, Node<T> *middle, Node<T> *right)
+    {
+        if (!left)
+            return InsertNodeIntoTree(right, middle);
+        if (!right)
+            return InsertNodeIntoTree(left, middle);
+        int h_left = GetBlackHeight(left);
+        int h_right = GetBlackHeight(right);
+        if (h_left == h_right)
+        {
+            middle->left_ = left;
+            middle->right_ = right;
+            middle->parent_ = nullptr;
+            middle->is_red_ = false;
+            left->parent_ = middle;
+            right->parent_ = middle;
+            return middle;
+        }
+        else if (h_left > h_right)
+        {
+            Node<T> *current = left;
+            Node<T> *parent = nullptr;
+            int current_height = h_left;
+            while (current && current_height > h_right)
+            {
+                parent = current;
+                current = current->right_;
+                if (current && !current->is_red_)
+                    current_height--;
+            }
+            middle->left_ = current;
+            middle->right_ = right;
+            middle->parent_ = parent;
+            middle->is_red_ = true;
+            if (parent)
+                parent->right_ = middle;
+            if (current)
+                current->parent_ = middle;
+            if (right)
+                right->parent_ = middle;
+            Node<T> *root = left;
+            while (root->parent_)
+                root = root->parent_;
+            Node<T> *old_root = root_;
+            root_ = root;
+            FixInsert(middle);
+            root = root_;
+            root_ = old_root;
+            return root;
+        }
+        else
+        {
+            Node<T> *current = right;
+            Node<T> *parent = nullptr;
+            int current_height = h_right;
+            while (current && current_height > h_left)
+            {
+                parent = current;
+                current = current->left_;
+                if (current && !current->is_red_)
+                    current_height--;
+            }
+            middle->left_ = left;
+            middle->right_ = current;
+            middle->parent_ = parent;
+            middle->is_red_ = true;
+            if (parent)
+                parent->left_ = middle;
+            if (left)
+                left->parent_ = middle;
+            if (current)
+                current->parent_ = middle;
+            Node<T> *root = right;
+            while (root->parent_)
+                root = root->parent_;
+            Node<T> *old_root = root_;
+            root_ = root;
+            FixInsert(middle);
+            root = root_;
+            root_ = old_root;
+            return root;
+        }
+    }
+    Node<T> *MergeNodes(Node<T> *t1, Node<T> *t2)
+    {
+        if (!t1)
+            return t2;
+        if (!t2)
+            return t1;
+        Node<T> *middle = t1;
+        Node<T> *t1_left = t1->left_;
+        Node<T> *t1_right = t1->right_;
+        if (t1_left)
+            t1_left->parent_ = nullptr;
+        if (t1_right)
+            t1_right->parent_ = nullptr;
+        middle->left_ = nullptr;
+        middle->right_ = nullptr;
+        middle->parent_ = nullptr;
+        auto split_result = Split(t2, middle->key_);
+        Node<T> *new_left = MergeNodes(t1_left, split_result.left);
+        Node<T> *new_right = MergeNodes(t1_right, split_result.right);
+        return Join(new_left, middle, new_right);
+    }
+    unsigned int CountNodes(Node<T> *node) const
+    {
+        if (!node)
+            return 0;
+        return 1 + CountNodes(node->left_) + CountNodes(node->right_);
+    }
+
 public:
     Subset() : root_(nullptr), size_(0) {}
     class iterator
@@ -477,6 +665,32 @@ public:
                 work_queue.push(current->right_);
             }
         }
+        return result;
+    }
+    void Merge(Subset<T> &other)
+    {
+        if (!other.root_)
+            return;
+        if (!root_)
+        {
+            root_ = other.root_;
+            size_ = other.size_;
+            other.root_ = nullptr;
+            other.size_ = 0;
+            return;
+        }
+        root_ = MergeNodes(root_, other.root_);
+        size_ = CountNodes(root_);
+        other.root_ = nullptr;
+        other.size_ = 0;
+    }
+    static Subset<T> MergeTrees(const Subset<T> &tree1, const Subset<T> &tree2)
+    {
+        Subset<T> result;
+        for (auto it = tree1.begin(); it != tree1.end(); ++it)
+            result.Insert(*it);
+        for (auto it = tree2.begin(); it != tree2.end(); ++it)
+            result.Insert(*it);
         return result;
     }
 };
