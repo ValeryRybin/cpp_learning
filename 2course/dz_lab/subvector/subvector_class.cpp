@@ -2,10 +2,11 @@
 #include <iostream>
 #include <algorithm>
 
+template <typename T>
 class Subvector
 {
 private:
-    int *data;
+    T *data;
     unsigned int size;
     unsigned int capacity;
 
